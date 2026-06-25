@@ -45,7 +45,11 @@ def calcular_score(
         puntos["pozos_dga"] = 10
     else:
         puntos["pozos_dga"] = 0
-        advertencias.append("Sin derechos de agua registrados en 2km")
+        if dga.error:
+            advertencias.append(
+                "⚠ Datos DGA no disponibles — el servidor del MOP no respondió. Los pozos cercanos no pudieron consultarse.")
+        else:
+            advertencias.append("Sin derechos de agua registrados en 2km según catastro DGA.")
 
     # ── 2. Caudal promedio de los pozos cercanos (máx 10 pts bonus) ──────────
     if dga.caudal_promedio_ls >= 5:

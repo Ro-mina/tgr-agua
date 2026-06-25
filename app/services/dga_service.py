@@ -82,7 +82,7 @@ async def _consultar_derechos(
         response.raise_for_status()
         data = response.json()
     except Exception as e:
-        resultado.error += f"Error consultando derechos DGA: {e}. "
+        resultado.error += "Servicio DGA temporalmente no disponible. "
         return
 
     features = data.get("features", [])
@@ -151,7 +151,7 @@ async def _consultar_restricciones(
         response.raise_for_status()
         data = response.json()
     except Exception as e:
-        resultado.error += f"Error consultando restricciones DGA: {e}. "
+        resultado.error += "Servicio de restricciones DGA temporalmente no disponible. "
         return
 
     features = data.get("features", [])
