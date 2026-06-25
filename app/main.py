@@ -2,11 +2,11 @@ import json
 import httpx
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
-
 from app.models.database import init_db, get_connection
 from app.services.dga_service import consultar_dga
 from app.services.topo_service import consultar_topografia
 from app.services.score_service import calcular_score
+from fastapi.middleware.cors import CORSMiddleware
 
 TGR_URL = "https://remates.tgr.cl/v1/getListaRematesActivos"
 
@@ -23,7 +23,12 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 def _actualizar_estado(remate_id: int, estado: str):
     conn = get_connection()
@@ -78,6 +83,33 @@ async def obtener_remates():
     conn.close()
 
     return {"mensaje": f"{guardados} remates nuevos guardados", "total_recibidos": len(items)}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /remates/por-rol/{rol}
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/remates/por-rol/{rol_formato}", summary="Analizar por rolFormato")
+async def analizar_por_rol(rol_formato: str):
+    conn = get_connection()
+    remate = conn.execute(
+        "SELECT * FROM remates WHERE rol_formato = ?", (rol_formato,)
+    ).fetchone()
+    conn.close()
+
+    if not remate:
+        # No está en BD → sincronizar con TGR primero
+        await obtener_remates()
+
+        conn = get_connection()
+        remate = conn.execute(
+            "SELECT * FROM remates WHERE rol_formato = ?", (rol_formato,)
+        ).fetchone()
+        conn.close()
+
+        if not remate:
+            raise HTTPException(404, f"Remate no encontrado en TGR: {rol_formato}")
+
+    return await analizar_remate(remate["id"])
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -228,16 +260,3 @@ async def listar_analisis(
 
     return [dict(r) for r in rows]
 
-@app.get("/remates/por-rol/{rol_formato}", summary="Analizar por rolFormato")
-async def analizar_por_rol(rol_formato: str):
-    """Busca o crea el remate por rolFormato y lo analiza."""
-    conn = get_connection()
-    remate = conn.execute(
-        "SELECT * FROM remates WHERE rol_formato = ?", (rol_formato,)
-    ).fetchone()
-    conn.close()
-
-    if not remate:
-        raise HTTPException(404, f"Remate no encontrado: {rol_formato}")
-
-    return await analizar_remate(remate["id"])
