@@ -227,3 +227,17 @@ async def listar_analisis(
     conn.close()
 
     return [dict(r) for r in rows]
+
+@app.get("/remates/por-rol/{rol_formato}", summary="Analizar por rolFormato")
+async def analizar_por_rol(rol_formato: str):
+    """Busca o crea el remate por rolFormato y lo analiza."""
+    conn = get_connection()
+    remate = conn.execute(
+        "SELECT * FROM remates WHERE rol_formato = ?", (rol_formato,)
+    ).fetchone()
+    conn.close()
+
+    if not remate:
+        raise HTTPException(404, f"Remate no encontrado: {rol_formato}")
+
+    return await analizar_remate(remate["id"])
