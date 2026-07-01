@@ -63,7 +63,7 @@ async def geocodificar_por_rol(rol_formato: str) -> ResultadoGeo:
 
     predio_data = data.get("data") if data else None
     if not predio_data:
-        return ResultadoGeo(lat=0, lon=0, error=f"SII no devolvió datos para: {rol_formato}")
+        return ResultadoGeo(lat=0, lon=0, error="No se encontraron datos en el SII para esta propiedad. Puede tratarse de un bien fiscal o un predio sin registro predial.")
 
     if not predio_data.get("existePredio"):
         return ResultadoGeo(lat=0, lon=0, error=f"Predio no encontrado en SII: {rol_formato}")
